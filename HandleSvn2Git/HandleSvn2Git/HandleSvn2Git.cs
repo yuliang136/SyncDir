@@ -60,26 +60,97 @@ namespace HandleSvn2Git
             //Console.WriteLine(m_gitBranchName);
             //Console.WriteLine(m_compareName);
 
-            //HandleSvnPath(m_svnPath);
-            //HandleGitPath(m_gitPath, m_gitBranchName);
+
+
+            HandleSvnPath(m_svnPath);
+            HandleGitPath(m_gitPath, m_gitBranchName);
 
             // 同步目录.
             SyncFolder(m_svnPath, m_gitPath);
 
-            
+            HandleGitCommit(m_gitPath);
 
+            OpenCompareTool(m_compareName);
+
+        }
+
+        /// <summary>
+        /// 打开比较工具.
+        /// </summary>
+        /// <param name="strCompareName"></param>
+        private void OpenCompareTool(string strCompareName)
+        {
+            Process p = new Process();
+            p.StartInfo.FileName = "cmd.exe";
+            p.StartInfo.UseShellExecute = false;            //是否使用操作系统shell启动
+            p.StartInfo.RedirectStandardInput = true;       //接受来自调用程序的输入信息
+            p.StartInfo.RedirectStandardOutput = true;      //由调用程序获取输出信息
+            p.StartInfo.CreateNoWindow = true;              //不显示程序窗口
+            p.Start();                                      //启动程序
+
+            string strGitPush = string.Format("BComp {0}", strCompareName);
+            p.StandardInput.WriteLine("{0} ", strGitPush);
+
+            p.StandardInput.WriteLine("exit");
+            p.StandardInput.AutoFlush = true;
+
+            string output = p.StandardOutput.ReadToEnd();
+
+            //等待程序执行完退出进程
+            p.WaitForExit();
+            p.Close();
+
+            Console.WriteLine(output);
+        }
+
+        private void HandleGitCommit(string strGitPath)
+        {
+            Process p = new Process();
+            p.StartInfo.FileName = "cmd.exe";
+            p.StartInfo.UseShellExecute = false;            //是否使用操作系统shell启动
+            p.StartInfo.RedirectStandardInput = true;       //接受来自调用程序的输入信息
+            p.StartInfo.RedirectStandardOutput = true;      //由调用程序获取输出信息
+            p.StartInfo.CreateNoWindow = true;              //不显示程序窗口
+            p.Start();                                      //启动程序
+
+            string strChangeDir = string.Format("cd /d {0}", strGitPath);
+            p.StandardInput.WriteLine("{0} ", strChangeDir);
+
+            string strGitAdd = string.Format("git add .");
+            p.StandardInput.WriteLine("{0} ", strGitAdd);
+
+            // 取得当前系统时间.
+            DateTime currentTime = DateTime.Now;
+            string strShowTime = currentTime.ToString();
+            string strComment = string.Format("update from svn at {0}", strShowTime);
+            string strGitCommit = string.Format("git commit -m \"{0}\"", strComment);
+            p.StandardInput.WriteLine("{0} ", strGitCommit);
+
+            string strGitPush = string.Format("git push");
+            p.StandardInput.WriteLine("{0} ", strGitPush);
+
+            p.StandardInput.WriteLine("exit");
+            p.StandardInput.AutoFlush = true;
+
+            string output = p.StandardOutput.ReadToEnd();
+
+            //等待程序执行完退出进程
+            p.WaitForExit();
+            p.Close();
+
+            Console.WriteLine(output);
         }
 
         private void SyncFolder(string strSourcePath, string strDestPath)
         {
             // Calculate Total File Number
-            Console.WriteLine("Calculate Total File Number");
+            Console.WriteLine("Calculate Total File Number....");
 
 
 
             CalculateTotalNum(strSourcePath);
             CalculateTotalNum(strDestPath);
-            Console.WriteLine(m_fileNum.ToString());
+            //Console.WriteLine(m_fileNum.ToString());
 
             //sw.Stop();
             //TimeSpan ts2 = sw.Elapsed;
@@ -89,6 +160,7 @@ namespace HandleSvn2Git
             IterateDestPath(strSourcePath, strDestPath);
 
             // 只统计多线程运行时间.
+            Console.WriteLine("Start Compare Files....");
             Stopwatch sw = new Stopwatch();
             sw.Start();
 
@@ -145,9 +217,12 @@ namespace HandleSvn2Git
 
             sw.Stop();
             TimeSpan ts2 = sw.Elapsed;
-            Console.WriteLine("Stopwatch cost {0}s.", ts2.TotalSeconds);
+            Console.WriteLine("FileCompare finished cost {0}s.", ts2.TotalSeconds);
 
-          Console.WriteLine("Finished");
+            //Console.WriteLine("Finished");
+
+            // Git Commit操作.
+
         }
 
         /// <summary>
@@ -291,15 +366,15 @@ namespace HandleSvn2Git
         {
             //string strShow = string.Format("{0}/{1}", m_curFile, m_fileNum);
 
-            double dPercent = (double)(m_curFile) / m_fileNum;
-            dPercent = dPercent * 100;
-            dPercent = Math.Round(dPercent,0);
+            //double dPercent = (double)(m_curFile) / m_fileNum;
+            //dPercent = dPercent * 100;
+            //dPercent = Math.Round(dPercent,0);
 
-            string strShow = string.Format("{0}%", dPercent);
+            //string strShow = string.Format("{0}%", dPercent);
 
-            Console.WriteLine(strShow);
+            //Console.WriteLine(strShow);
 
-            m_curFile++;
+            //m_curFile++;
         }
 
         private void HandleSourceFile(string strSourceFileName, string strDestFileName)

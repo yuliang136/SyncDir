@@ -29,8 +29,8 @@ namespace HandleSvn2Git
 
             for (int i = 0; i < m_CompareData.Count; i++)
             {
-                strShow = string.Format("{0} / {1}", i, m_CompareData.Count);
-                Console.WriteLine(strShow);
+                //strShow = string.Format("{0} / {1}", i, m_CompareData.Count);
+                //Console.WriteLine(strShow);
 
                 CompareStruct eachCompareData = m_CompareData[i];
                 strSourceFileName = eachCompareData.sourceFileName;
