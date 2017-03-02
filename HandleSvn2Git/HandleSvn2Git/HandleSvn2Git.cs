@@ -9,6 +9,19 @@ using System.Threading.Tasks;
 
 namespace HandleSvn2Git
 {
+    // 比较结构.
+    public struct CompareStruct
+    {
+        public string sourceFileName;
+        public string destFileName;
+
+        public CompareStruct(string strSourceFileName, string strDestFileName)
+        {
+            this.sourceFileName = strSourceFileName;
+            this.destFileName = strDestFileName;
+        }
+    }
+
     class HandleSvn2Git
     {
         public string m_svnPath = string.Empty;             // svn目录路径.
@@ -18,6 +31,9 @@ namespace HandleSvn2Git
 
         public Int32 m_fileNum = 0;                         // 文件总数.
         public Int32 m_curFile = 1;                         // 当前处理文件Index.
+
+        // 比较总数.
+        public List<CompareStruct> m_TotalCompareFiles = new List<CompareStruct>();
 
         public void Logout(string strMessage, string strType)
         {
@@ -56,13 +72,23 @@ namespace HandleSvn2Git
             // Calculate Total File Number
             Console.WriteLine("Calculate Total File Number");
 
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
             CalculateTotalNum(strSourcePath);
             CalculateTotalNum(strDestPath);
             Console.WriteLine(m_fileNum.ToString());
 
-            IterateSourcePath(strSourcePath, strDestPath);
+            //sw.Stop();
+            //TimeSpan ts2 = sw.Elapsed;
+            //Console.WriteLine("Stopwatch cost {0}ms.", ts2.TotalMilliseconds);
 
+            IterateSourcePath(strSourcePath, strDestPath);
             IterateDestPath(strSourcePath, strDestPath);
+
+            sw.Stop();
+            TimeSpan ts2 = sw.Elapsed;
+            Console.WriteLine("Stopwatch cost {0}ms.", ts2.TotalMilliseconds);
 
             Console.WriteLine("Here");
         }
@@ -243,7 +269,7 @@ namespace HandleSvn2Git
 
             double dPercent = (double)(m_curFile) / m_fileNum;
             dPercent = dPercent * 100;
-            dPercent = Math.Round(dPercent,2);
+            dPercent = Math.Round(dPercent,0);
 
             string strShow = string.Format("{0}%", dPercent);
 
@@ -264,12 +290,16 @@ namespace HandleSvn2Git
             }
             else
             {
-                // 判断两个文件是否一致.
-                if (!FileCompareByte(strSourceFileName, strDestFileName))
-                {
-                    File.Copy(strSourceFileName, strDestFileName, true);
-                    Logout(strDestFileName, "Update");
-                }
+                // 先不比较文件 记录下来 统计计算时间.
+                CompareStruct cs = new CompareStruct(strSourceFileName, strDestFileName);
+                m_TotalCompareFiles.Add(cs);
+
+                //// 判断两个文件是否一致.
+                //if (!FileCompareByte(strSourceFileName, strDestFileName))
+                //{
+                //    File.Copy(strSourceFileName, strDestFileName, true);
+                //    Logout(strDestFileName, "Update");
+                //}
             }
 
         }
