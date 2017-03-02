@@ -10,8 +10,8 @@
 @rem @python ./PythonScripts/SyncFolder.py %SourcePath% %DestPath%
 
 @rem HandleTrunk
-@set svnShuiHu=F:\SyncProjects\ShuiHu\trunk
-@set gitShuiHu=F:\SyncProjects\ShuiHu\gitWorks\ShuiHu\ShuiHu_trunk
+@set svnShuiHu=D:\SyncProjects\Svn\ShuiHu\trunk
+@set gitShuiHu=D:\SyncProjects\Git\ShuiHu\ShuiHu_trunk
 @set branchName=trunk
 @set compName=CheckSVN2Git_ShuiHu_trunk
 @set threadNum=100
