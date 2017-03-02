@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace HandleSvn2Git
@@ -28,6 +29,7 @@ namespace HandleSvn2Git
         public string m_gitPath = string.Empty;             // git目录路径.
         public string m_gitBranchName = string.Empty;       // git分支名称.
         public string m_compareName = string.Empty;         // BeyondCompare Session Name.
+        public int m_threadNum = 0;                         // 线程总数.
 
         public Int32 m_fileNum = 0;                         // 文件总数.
         public Int32 m_curFile = 1;                         // 当前处理文件Index.
@@ -51,6 +53,7 @@ namespace HandleSvn2Git
             m_gitPath = strParams[2];
             m_gitBranchName = strParams[3];
             m_compareName = strParams[4];
+            m_threadNum = Convert.ToInt32(strParams[5]);
 
             //Console.WriteLine(m_svnPath);
             //Console.WriteLine(m_gitPath);
@@ -72,8 +75,7 @@ namespace HandleSvn2Git
             // Calculate Total File Number
             Console.WriteLine("Calculate Total File Number");
 
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
+
 
             CalculateTotalNum(strSourcePath);
             CalculateTotalNum(strDestPath);
@@ -86,11 +88,90 @@ namespace HandleSvn2Git
             IterateSourcePath(strSourcePath, strDestPath);
             IterateDestPath(strSourcePath, strDestPath);
 
+            // 只统计多线程运行时间.
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
+
+            int nThreadNum = m_threadNum;
+
+            List<HandleUnit> HUnitList = new List<HandleUnit>();
+            // 生成多个HandleUnit分配处理数据.
+            for (int i = 0; i < nThreadNum; i++)
+            {
+                HandleUnit hu = new HandleUnit();
+                HUnitList.Add(hu);
+            }
+
+            int nIndex = 0;
+            for (int i = 0; i < m_TotalCompareFiles.Count; i++)
+            {
+                // 求余数.
+                nIndex = (i % nThreadNum);
+                CompareStruct cs = new CompareStruct(
+                                                        m_TotalCompareFiles[i].sourceFileName,
+                                                        m_TotalCompareFiles[i].destFileName
+                                                    );
+
+                HUnitList[nIndex].m_CompareData.Add(cs);
+            }
+
+            // 设置线程.
+            List<Thread> threadList = new List<Thread>();
+            for (int i = 0; i < HUnitList.Count; i++)
+            {
+                Thread HandleThread;          // 发送数据的线程对象.
+
+                HandleUnit each = HUnitList[i];
+
+                HandleThread = new Thread(new ThreadStart(each.StartCompare));
+
+                threadList.Add(HandleThread);
+            }
+            
+            // 同时启动线程.
+            for (int i = 0; i < HUnitList.Count; i++)
+            {
+                Thread each = threadList[i];
+
+                each.Start();
+            }
+
+            bool bExit = false;
+            while (false == bExit)
+            {
+                bExit = CheckStop(threadList);
+            }
+
             sw.Stop();
             TimeSpan ts2 = sw.Elapsed;
-            Console.WriteLine("Stopwatch cost {0}ms.", ts2.TotalMilliseconds);
+            Console.WriteLine("Stopwatch cost {0}s.", ts2.TotalSeconds);
 
-            Console.WriteLine("Here");
+          Console.WriteLine("Finished");
+        }
+
+        /// <summary>
+        /// 检测线程是否结束
+        /// </summary>
+        /// <param name="threadList"></param>
+        /// <returns></returns>
+        private bool CheckStop(List<Thread> threadList)
+        {
+            bool bRtn = true;
+
+            int num = threadList.Count;
+            for (int i = 0; i < num; i++)
+            {
+                Thread each = threadList[i];
+                bool bLive = each.IsAlive;
+
+                if (true == bLive)
+                {
+                    bRtn = false;
+                    break;
+                }
+            }
+            return bRtn;
         }
 
         private void HandleDestFile(string strSourceFileName, string strDestFileName)
@@ -204,63 +285,6 @@ namespace HandleSvn2Git
             }
 
 
-        }
-
-        private string GetMD5HashFromFile(string fileName)
-        {
-            FileStream file = new FileStream(fileName, FileMode.Open);
-            MD5 md5 = new MD5CryptoServiceProvider();
-            byte[] retVal = md5.ComputeHash(file);
-            file.Close();
-            ASCIIEncoding enc = new ASCIIEncoding();
-            return enc.GetString(retVal);
-        }
-
-        private bool FileCompareMD5(string fileA, string fileB)
-        {
-            bool bRtn = false;
-
-            string fileAMD5 = GetMD5HashFromFile(fileA);
-            string fileBMD5 = GetMD5HashFromFile(fileB);
-
-            bRtn = (fileAMD5 == fileBMD5);
-
-            return bRtn;
-        }
-
-        private bool FileCompareByte(string strFileA, string strFileB)
-        {
-            if (strFileA == strFileB)
-            {
-                return true;
-            }
-
-            int nFileAbyte = 0;
-            int nFileBbyte = 0;
-
-            FileStream fsA = new FileStream(strFileA, FileMode.Open);
-            FileStream fsB = new FileStream(strFileB, FileMode.Open);
-
-            if (fsA.Length != fsB.Length)
-            {
-                fsA.Close();
-                fsB.Close();
-
-                return false;
-            }
-
-            do
-            {
-                nFileAbyte = fsA.ReadByte();
-                nFileBbyte = fsB.ReadByte();
-
-            }
-            while ((nFileAbyte == nFileBbyte) && (nFileAbyte != -1));
-
-            fsA.Close();
-            fsB.Close();
-
-            return ((nFileAbyte - nFileBbyte) == 0);
         }
 
         private void UpdateHandleTime()

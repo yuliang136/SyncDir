@@ -14,8 +14,9 @@
 @set gitShuiHu=F:\SyncProjects\ShuiHu\gitWorks\ShuiHu\ShuiHu_trunk
 @set branchName=trunk
 @set compName=CheckSVN2Git_ShuiHu_trunk
+@set threadNum=100
 
-@HandleSvn2Git.exe %svnShuiHu% %gitShuiHu% %branchName% %compName%
+@HandleSvn2Git.exe %svnShuiHu% %gitShuiHu% %branchName% %compName% %threadNum%
 
 
 
