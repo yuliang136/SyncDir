@@ -17,7 +17,7 @@ namespace HandleSvn2Git
             HandleSvn2Git hsGit = new HandleSvn2Git();
             hsGit.Run(argsArray);
 
-            Console.Read();
+            //Console.Read();
         }
     }
 }

@@ -70,8 +70,10 @@ namespace HandleSvn2Git
 
             HandleGitCommit(m_gitPath);
 
-            OpenCompareTool(m_compareName);
-
+            if (m_compareName != "none")
+            {
+                OpenCompareTool(m_compareName);
+            }
         }
 
         /// <summary>
